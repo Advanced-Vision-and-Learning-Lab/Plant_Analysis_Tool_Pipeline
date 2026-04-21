@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# HuggingFace cache
+hf_cache/
+.cache/
+
+# Large annotation / data files
+annotations/instances_default.json
+
+# Model weights
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# Results / outputs
+results/
+outputs/
+
+# Secrets
+.env
+config.yaml
+
+# Jupyter
+.ipynb_checkpoints/
+
+# macOS
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
