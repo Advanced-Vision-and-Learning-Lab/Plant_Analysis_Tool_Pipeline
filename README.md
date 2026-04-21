@@ -765,10 +765,12 @@ export HUGGINGFACE_TOKEN="hf_your_token_here"
 If you use this pipeline in your research, please cite:
 
 ```bibtex
-@software{plant_analysis_pipeline,
-  author = {Advanced Vision and Learning Lab},
-  title  = {Plant Analysis Tool Pipeline},
-  year   = {2025},
-  url    = {https://github.com/Advanced-Vision-and-Learning-Lab/Plant_Analysis_Tool_Pipeline}
+@article{orvati2026data,
+  title={A Data-Driven Image Extraction and Analysis Pipeline for Plant Phenotyping in Controlled Environments},
+  author={Orvati Nia, Fahimeh and Peeples, Joshua and Murray, Seth C and McFarland, Andrew and Vann, Troy and Salehi, Shima and Hardin, Robert and Baltensperger, David D and Ibrahim, Amir and Thomasson, J Alex and others},
+  journal={bioRxiv},
+  pages={2026--02},
+  year={2026},
+  publisher={Cold Spring Harbor Laboratory}
 }
 ```
