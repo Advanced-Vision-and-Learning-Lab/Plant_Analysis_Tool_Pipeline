@@ -80,6 +80,16 @@ Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
 |:-----------------------:|:-------------:|
 | ![ndvi](examples/sample_outputs/tif_output/ndvi.png) | ![texture](examples/sample_outputs/tif_output/texture_lbp.png) |
 
+#### Extracted Features — Multispectral TIF
+
+> Full CSVs: [`features_vegetation_indices.csv`](examples/features_vegetation_indices.csv) · [`features_texture.csv`](examples/features_texture.csv) · [`features_morphology.csv`](examples/features_morphology.csv)
+
+![Vegetation Indices Table](examples/table_vegetation_indices.png)
+
+![Texture Features Table](examples/table_texture_features.png)
+
+![Morphology Features Table](examples/table_morphology_features.png)
+
 ---
 
 ### RGB Input
