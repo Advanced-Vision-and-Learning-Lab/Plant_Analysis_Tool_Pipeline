@@ -72,25 +72,25 @@ Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
 
 ### Multispectral TIF Input
 
-| Input TIF | Composite | Mask | Overlay |
-|:---------:|:---------:|:----:|:-------:|
-| *(4-band .tif)* | ![composite](examples/sample_outputs/tif_output/composite.png) | ![mask](examples/sample_outputs/tif_output/mask.png) | ![overlay](examples/sample_outputs/tif_output/overlay.png) |
+| Composite | Overlay |
+|:---------:|:-------:|
+| ![composite](examples/sample_outputs/tif_output/composite.png) | ![overlay](examples/sample_outputs/tif_output/overlay.png) |
 
-| NDVI | Morphology Skeleton |
-|:----:|:-------------------:|
-| ![ndvi](examples/sample_outputs/tif_output/ndvi.png) | ![skeleton](examples/sample_outputs/tif_output/skeleton.png) |
+| Vegetation Index (NDVI) | Texture (LBP) |
+|:-----------------------:|:-------------:|
+| ![ndvi](examples/sample_outputs/tif_output/ndvi.png) | ![texture](examples/sample_outputs/tif_output/texture_lbp.png) |
 
 ---
 
 ### RGB Input
 
-| Input RGB | Composite | Mask | Overlay |
-|:---------:|:---------:|:----:|:-------:|
-| ![rgb input](examples/inputs/rgb_plant.png) | ![composite](examples/sample_outputs/rgb_output/composite.png) | ![mask](examples/sample_outputs/rgb_output/mask.png) | ![overlay](examples/sample_outputs/rgb_output/overlay.png) |
+| Composite | Overlay |
+|:---------:|:-------:|
+| ![composite](examples/sample_outputs/rgb_output/composite.png) | ![overlay](examples/sample_outputs/rgb_output/overlay.png) |
 
-| NGRDI (RGB vegetation index) |
-|:----------------------------:|
-| ![ngrdi](examples/sample_outputs/rgb_output/ngrdi.png) |
+| Vegetation Index (NGRDI) | Texture (LBP) | Morphology (Skeleton) |
+|:------------------------:|:-------------:|:---------------------:|
+| ![ngrdi](examples/sample_outputs/rgb_output/ngrdi.png) | ![texture](examples/sample_outputs/rgb_output/texture_lbp.png) | ![skeleton](examples/sample_outputs/rgb_output/skeleton.png) |
 
 ---
 
