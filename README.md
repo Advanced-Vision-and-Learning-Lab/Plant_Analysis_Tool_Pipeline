@@ -68,6 +68,32 @@ Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
 
 ---
 
+## Example: Input → Output
+
+### Multispectral TIF Input
+
+| Input TIF | Composite | Mask | Overlay |
+|:---------:|:---------:|:----:|:-------:|
+| *(4-band .tif)* | ![composite](examples/sample_outputs/tif_output/composite.png) | ![mask](examples/sample_outputs/tif_output/mask.png) | ![overlay](examples/sample_outputs/tif_output/overlay.png) |
+
+| NDVI | Morphology Skeleton |
+|:----:|:-------------------:|
+| ![ndvi](examples/sample_outputs/tif_output/ndvi.png) | ![skeleton](examples/sample_outputs/tif_output/skeleton.png) |
+
+---
+
+### RGB Input
+
+| Input RGB | Composite | Mask | Overlay |
+|:---------:|:---------:|:----:|:-------:|
+| ![rgb input](examples/inputs/rgb_plant.png) | ![composite](examples/sample_outputs/rgb_output/composite.png) | ![mask](examples/sample_outputs/rgb_output/mask.png) | ![overlay](examples/sample_outputs/rgb_output/overlay.png) |
+
+| NGRDI (RGB vegetation index) |
+|:----------------------------:|
+| ![ngrdi](examples/sample_outputs/rgb_output/ngrdi.png) |
+
+---
+
 ## Repository Structure
 
 ```
@@ -75,6 +101,22 @@ Plant_Analysis_Tool_Pipeline/
 ├── pipeline.py               # PlantPipeline — main orchestrator
 ├── config.py                 # Config dataclass + YAML I/O
 ├── __init__.py               # Public API exports
+├── examples/
+│   ├── inputs/
+│   │   ├── multispectral_plant.tif   # Example 4-band multispectral TIF input
+│   │   └── rgb_plant.png             # Example standard RGB input
+│   └── sample_outputs/
+│       ├── tif_output/               # Pipeline outputs for the TIF example
+│       │   ├── composite.png         # RGB composite built from bands
+│       │   ├── mask.png              # Segmentation mask
+│       │   ├── overlay.png           # Mask overlaid on composite
+│       │   ├── ndvi.png              # NDVI vegetation index heatmap
+│       │   └── skeleton.png          # Morphology skeleton overlay
+│       └── rgb_output/               # Pipeline outputs for the RGB example
+│           ├── composite.png         # RGB composite (pass-through)
+│           ├── mask.png              # Segmentation mask
+│           ├── overlay.png           # Mask overlaid on composite
+│           └── ngrdi.png             # NGRDI vegetation index (RGB-compatible)
 ├── data/
 │   ├── loader.py             # DataLoader — discover date/plant/frame TIFFs
 │   ├── preprocessor.py       # ImagePreprocessor — split 4-band TIFF → composite
