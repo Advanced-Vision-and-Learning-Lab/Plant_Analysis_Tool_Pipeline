@@ -1,6 +1,6 @@
 # Plant Analysis Tool Pipeline
 
-An end-to-end sorghum plant phenotyping library: load multi-band TIFFs, build RGB composites, segment plants with BRIA RMBG, extract texture / vegetation / morphology features, and write structured per-plant outputs.
+An end-to-end plant phenotyping library: load multi-band TIFFs or standard RGB images, build composites, segment plants with BRIA RMBG, extract texture / vegetation / morphology features, and write structured per-plant outputs.
 
 ---
 
@@ -28,17 +28,22 @@ An end-to-end sorghum plant phenotyping library: load multi-band TIFFs, build RG
 
 ```
 Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
+  OR Standard RGB  (PNG / JPG — any camera)
         │
         ▼
 ┌─────────────────────┐
-│   ImagePreprocessor  │  ── splits quadrants → RGB composite + spectral stack
-└──────────┬──────────┘
+│   ImagePreprocessor  │  ── TIF: splits quadrants → RGB composite + spectral stack
+└──────────┬──────────┘      RGB: loaded directly
            │
            ▼
-┌─────────────────────┐
-│  SegmentationManager │  ── BRIA RMBG (HuggingFace) → binary plant mask
-│  (+ optional YOLO)   │     optional bounding-box crop before segmentation
-└──────────┬──────────┘
+┌──────────────────────────────────────┐
+│         SegmentationManager          │
+│  ┌─────────────────────────────────┐ │
+│  │  BRIA RMBG-2.0 (default)        │ │  ── background removal model (HF)
+│  │  SAM3 / text-prompted           │ │  ── segment-anything with text prompt
+│  └─────────────────────────────────┘ │
+│  + optional YOLO bounding-box crop   │
+└──────────┬───────────────────────────┘
            │
     ┌──────┴───────────────────────────────┐
     │              │                       │
@@ -66,13 +71,14 @@ Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
 ## Repository Structure
 
 ```
-sorghum_pipeline/
-├── pipeline.py               # SorghumPipeline — main orchestrator
+Plant_Analysis_Tool_Pipeline/
+├── pipeline.py               # PlantPipeline — main orchestrator
 ├── config.py                 # Config dataclass + YAML I/O
 ├── __init__.py               # Public API exports
 ├── data/
 │   ├── loader.py             # DataLoader — discover date/plant/frame TIFFs
 │   ├── preprocessor.py       # ImagePreprocessor — split 4-band TIFF → composite
+│   │                         #                     or load standard RGB directly
 │   └── mask_handler.py       # MaskHandler — mask morphology, filtering, overlays
 ├── segmentation/
 │   └── manager.py            # SegmentationManager — BRIA RMBG inference
@@ -95,9 +101,9 @@ sorghum_pipeline/
 │   ├── realesrgan_upscale_composites.py     # Upscale composites (ncnn-vulkan)
 │   ├── realesrgan_upscale_composites_torch.py # Upscale composites (PyTorch)
 │   ├── feature_correlation_heatmap.py       # Feature correlation heatmap plot
-│   └── unl_cppd_pose/
-│       ├── prepare_unl_cppd_pose_dataset.py # Convert GT JSON → YOLO-Pose dataset
-│       ├── predict_mullet_keypoints.py       # Run pose model, output keypoint JSON
+│   └── rgb_input_pose/
+│       ├── prepare_rgb_input_pose_dataset.py # Convert GT JSON → YOLO-Pose dataset
+│       ├── predict_plant_keypoints.py        # Run pose model, output keypoint JSON
 │       └── README.md
 └── annotations/
     └── instances_default.json  # COCO-style instance annotations (plant class)
@@ -140,15 +146,15 @@ export HUGGINGFACE_TOKEN="hf_your_token_here"
 ## Quick Start
 
 ```python
-from sorghum_pipeline import SorghumPipeline
+from pipeline import PlantPipeline
 
-results = SorghumPipeline("config.yaml").run()
+results = PlantPipeline("config.yaml").run()
 ```
 
 Or use the convenience wrapper:
 
 ```python
-from sorghum_pipeline.pipeline import run_pipeline
+from pipeline import run_pipeline
 
 results = run_pipeline(
     config_path="config.yaml",
@@ -187,7 +193,8 @@ output:
   save_metadata: true
 
 model:
-  segmentation_model: "briaai/RMBG-2.0"
+  segmentation_model: "briaai/RMBG-2.0"  # or "sam3" to use SAM3 backend
+  text_prompt: "plant"                    # used only when segmentation_model: "sam3"
   yolo_model: "yolov8n.pt"
 ```
 
@@ -198,7 +205,7 @@ model:
 | `Paths` | `input_folder`, `output_folder`, `yolo_weights`, `bbox_dir` |
 | `ProcessingParams` | `device`, `max_plants`, `max_frames` |
 | `OutputSettings` | `save_segmentation`, `save_texture`, `save_vegetation`, `save_morphology` |
-| `ModelSettings` | `segmentation_model`, `yolo_model` |
+| `ModelSettings` | `segmentation_model` (`"briaai/RMBG-2.0"` or `"sam3"`), `text_prompt`, `yolo_model` |
 
 ---
 
@@ -287,28 +294,64 @@ Utility class for mask operations used throughout the pipeline.
 
 **File:** `segmentation/manager.py` — `SegmentationManager`
 
-Loads the **BRIA RMBG-2.0** background-removal model from HuggingFace and runs inference to produce binary plant masks.
+Supports two segmentation backends that can be selected via config. Both produce a binary plant mask at the original image resolution.
 
-### Steps
+---
+
+### Backend A — BRIA RMBG-2.0 (default)
+
+A dedicated background-removal model loaded from HuggingFace (`briaai/RMBG-2.0`). Best for clean greenhouse / studio images with a clear foreground plant.
+
+**Steps:**
 
 1. **Model loading** — `AutoModelForImageSegmentation` from `briaai/RMBG-2.0`; cached after first download.
 2. **Preprocessing** — resize to model input size, normalize.
 3. **Inference** — forward pass; output is a soft foreground probability map.
 4. **Postprocessing** — threshold → binary mask, resize back to original resolution.
 
-### Key Methods
+---
+
+### Backend B — SAM3 (Segment Anything Model 3)
+
+A text-prompted segmentation model loaded from HuggingFace (`facebook/sam3` or equivalent). Best for complex scenes with multiple plants, varied backgrounds, or when a natural-language prompt is needed to isolate the target plant.
+
+**Steps:**
+
+1. **Model loading** — `Sam3Model` + `Sam3Processor` from `transformers`; cached after first download.
+2. **Text prompt** — e.g. `"plant"`, `"middle front plant"`, `"sorghum"` — controls which object is segmented.
+3. **Inference** — processor encodes image + prompt; model outputs instance masks with confidence scores.
+4. **Mask selection** — highest-confidence mask is selected; optional heuristics (largest, most-centered) applied for multi-instance scenes.
+5. **Postprocessing** — threshold → binary mask, resize back to original resolution.
+
+Enable SAM3 by setting `segmentation_model: "sam3"` in config, and provide a `text_prompt`.
+
+---
+
+### Shared Key Methods
 
 | Method | Description |
 |--------|-------------|
-| `segment_image(image)` | Returns uint8 binary mask (0 / 255) |
+| `segment_image(image)` | Returns uint8 binary mask (0 / 255) using the configured backend |
 | `segment_image_soft(image)` | Returns float [0, 1] probability mask |
-| `post_process_mask(mask)` | Apply morphological cleanup |
-| `keep_largest_component(mask)` | Remove small disconnected blobs |
+| `post_process_mask(mask)` | Apply morphological cleanup (fill holes, remove small blobs) |
+| `keep_largest_component(mask)` | Retain only the largest connected component |
 | `validate_mask(mask)` | Reject masks below area threshold |
-| `create_overlay(image, mask)` | Visualization helper |
+| `create_overlay(image, mask)` | Colored mask overlay for visualization |
 
-**Input:** BGR `np.ndarray` (OpenCV format — converted internally to RGB for the model).  
+**Input:** BGR `np.ndarray` (OpenCV format — converted internally to RGB for both models).  
 **Output:** Binary mask same spatial size as input.
+
+---
+
+### Choosing a Backend
+
+| Scenario | Recommended backend |
+|----------|-------------------|
+| Single plant, plain background | BRIA RMBG-2.0 |
+| Multiple plants in frame | SAM3 with targeted text prompt |
+| RGB photos, no depth cues | BRIA RMBG-2.0 |
+| Multispectral composites | Either; SAM3 preferred for complex scenes |
+| Need language-guided selection | SAM3 |
 
 ---
 
@@ -487,7 +530,7 @@ Writes all per-plant results to a structured folder tree.
 
 ## Module 7 — Pipeline
 
-**File:** `pipeline.py` — `SorghumPipeline`
+**File:** `pipeline.py` — `PlantPipeline`
 
 The main orchestrator. Wires all modules together.
 
@@ -529,7 +572,7 @@ run()
 }
 ```
 
-Writes `sorghum_pipeline.log` next to the output folder.
+Writes `plant_pipeline.log` next to the output folder.
 
 ---
 
@@ -579,7 +622,7 @@ python tools/copy_original_composites.py \
 
 ### `sam3_batch_segment.py`
 
-Batch SAM3 text-prompt segmentation on Mullet composite images.
+Batch SAM3 text-prompt segmentation on composite images. Use this as a standalone alternative to the BRIA backend when you need language-guided plant isolation across a folder of images.
 
 ```bash
 python tools/sam3_batch_segment.py \
@@ -588,7 +631,7 @@ python tools/sam3_batch_segment.py \
   --prompt "plant"
 ```
 
-Saves per-image: `__sam3_mask.png`, cutout, overlay, `stats.json`.
+Saves per image: `__sam3_mask.png`, masked cutout, overlay PNG, `stats.json`.
 
 ---
 
@@ -617,28 +660,28 @@ python tools/feature_correlation_heatmap.py \
 
 ---
 
-### `tools/unl_cppd_pose/`
+### `tools/rgb_input_pose/`
 
-Keypoint / pose estimation utilities.
+Keypoint / pose estimation utilities for standard RGB input images.
 
-#### `prepare_unl_cppd_pose_dataset.py`
+#### `prepare_rgb_input_pose_dataset.py`
 
 Converts a ground-truth keypoint annotation JSON into an Ultralytics YOLO-Pose training dataset.
 
 ```bash
-python tools/unl_cppd_pose/prepare_unl_cppd_pose_dataset.py \
+python tools/rgb_input_pose/prepare_rgb_input_pose_dataset.py \
   --dataset-root /path/to/gt_dataset \
   --output-root /path/to/yolo_pose_dataset
 ```
 
 Produces: `images/`, `labels/` (YOLO-Pose `.txt`), `leaf_status/`, `dataset.yaml`.
 
-#### `predict_mullet_keypoints.py`
+#### `predict_plant_keypoints.py`
 
 Run a trained YOLO-Pose model on plant images to predict leaf tip keypoints.
 
 ```bash
-python tools/unl_cppd_pose/predict_mullet_keypoints.py \
+python tools/rgb_input_pose/predict_plant_keypoints.py \
   --model /path/to/pose.pt \
   --images /path/to/plant_images \
   --out /path/to/predictions
@@ -689,8 +732,8 @@ output_folder/
 
 | Package | Purpose |
 |---------|---------|
-| `torch` + `torchvision` | BRIA model inference; DBC lacunarity |
-| `transformers` | HuggingFace `AutoModelForImageSegmentation` (BRIA RMBG) |
+| `torch` + `torchvision` | BRIA and SAM3 model inference; DBC lacunarity |
+| `transformers` | HuggingFace `AutoModelForImageSegmentation` (BRIA RMBG) and `Sam3Model` / `Sam3Processor` (SAM3) |
 | `opencv-python` | Image I/O, contour analysis, morphological ops |
 | `Pillow` | TIFF loading |
 | `numpy` | Array operations |
