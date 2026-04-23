@@ -10,17 +10,18 @@ An end-to-end plant phenotyping library: load multi-band TIFFs or standard RGB i
 2. [Repository Structure](#repository-structure)
 3. [Installation](#installation)
 4. [Quick Start](#quick-start)
-5. [Configuration](#configuration)
-6. [Module 1 — Data (`data/`)](#module-1--data)
-7. [Module 2 — Segmentation (`segmentation/`)](#module-2--segmentation)
-8. [Module 3 — Detection (`detection/`)](#module-3--detection)
-9. [Module 4 — Features (`features/`)](#module-4--features)
-10. [Module 5 — Models (`models/`)](#module-5--models)
-11. [Module 6 — Output (`output/`)](#module-6--output)
-12. [Module 7 — Pipeline (`pipeline.py`)](#module-7--pipeline)
-13. [Tools (`tools/`)](#tools)
-14. [Output Structure](#output-structure)
-15. [Dependencies](#dependencies)
+5. [Running End-to-End with `python main.py`](#running-end-to-end-with-python-mainpy)
+6. [Configuration](#configuration)
+7. [Module 1 — Data (`data/`)](#module-1--data)
+8. [Module 2 — Segmentation (`segmentation/`)](#module-2--segmentation)
+9. [Module 3 — Detection (`detection/`)](#module-3--detection)
+10. [Module 4 — Features (`features/`)](#module-4--features)
+11. [Module 5 — Models (`models/`)](#module-5--models)
+12. [Module 6 — Output (`output/`)](#module-6--output)
+13. [Module 7 — Pipeline (`pipeline.py`)](#module-7--pipeline)
+14. [Tools (`tools/`)](#tools)
+15. [Output Structure](#output-structure)
+16. [Dependencies](#dependencies)
 
 ---
 
@@ -108,7 +109,8 @@ Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
 
 ```
 Plant_Analysis_Tool_Pipeline/
-├── pipeline.py               # PlantPipeline — main orchestrator
+├── main.py                   # CLI entry point — run with `python main.py --config config.yaml`
+├── pipeline.py               # SorghumPipeline — main orchestrator
 ├── config.py                 # Config dataclass + YAML I/O
 ├── __init__.py               # Public API exports
 ├── examples/
@@ -214,6 +216,106 @@ results = run_pipeline(
     segmentation_only=False, # also extract features
 )
 ```
+
+---
+
+## Running End-to-End with `python main.py`
+
+`main.py` is the recommended way to run the full pipeline from the command line. It loads your config, runs every stage, prints a summary, and saves a `run_summary.json` next to the results.
+
+### Minimal run
+
+```bash
+python main.py --config config.yaml
+```
+
+All outputs (PNG images, JSON feature files, run log, summary) are written to the `output_folder` defined in your config.
+
+---
+
+### Command-line reference
+
+```
+usage: python main.py [--config PATH] [--input DIR] [--output DIR]
+                      [--all-frames] [--segmentation-only]
+                      [--plants PLANT [PLANT ...]]
+                      [--frames FRAME [FRAME ...]]
+                      [--force-reprocess] [--device DEVICE]
+                      [--summary PATH] [--verbose]
+```
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--config` | `-c` | `config.yaml` | Path to the YAML configuration file |
+| `--input` | `-i` | *(from config)* | Override `paths.input_folder` |
+| `--output` | `-o` | *(from config)* | Override `paths.output_folder` |
+| `--all-frames` | | `False` | Process every frame per plant instead of selected frames only |
+| `--segmentation-only` | | `False` | Stop after segmentation — skip texture, vegetation, and morphology extraction |
+| `--plants` | | *(all)* | Process only the named plants, e.g. `--plants plant1 plant2` |
+| `--frames` | | *(all)* | Process only specific frame numbers, e.g. `--frames 8 9` |
+| `--force-reprocess` | | `False` | Reprocess even if outputs already exist |
+| `--device` | | *(auto)* | Override compute device: `cuda` or `cpu` |
+| `--summary` | | `<output>/run_summary.json` | Custom path for the JSON run summary |
+| `--verbose` | `-v` | `False` | Enable DEBUG-level logging |
+
+---
+
+### Common examples
+
+```bash
+# Override both input and output paths without editing config.yaml
+python main.py --config config.yaml \
+    --input /data/raw_plants \
+    --output /results/experiment_01
+
+# Process all frames (not just the selected best frame)
+python main.py --config config.yaml --all-frames
+
+# Segmentation only — fastest pass, no feature extraction
+python main.py --config config.yaml --segmentation-only
+
+# Restrict to specific plants and a specific frame number
+python main.py --config config.yaml --plants plant1 plant3 --frames 8
+
+# Force a full rerun even if outputs already exist
+python main.py --config config.yaml --force-reprocess
+
+# Run on CPU (overrides config)
+python main.py --config config.yaml --device cpu
+
+# Save the run summary to a custom path
+python main.py --config config.yaml --summary logs/run_2024_12_04.json
+```
+
+---
+
+### Where results are saved
+
+After a successful run every plant's outputs land under `output_folder`:
+
+```
+output_folder/
+└── YYYY_MM_DD/
+    └── plantN/
+        ├── composite.png
+        ├── mask.png
+        ├── overlay.png
+        ├── texture/
+        │   ├── lbp.png
+        │   ├── lacunarity.png
+        │   └── texture_stats.json
+        ├── vegetation_indices/
+        │   ├── ndvi.png
+        │   └── vi_stats.json
+        ├── morphology/
+        │   ├── skeleton.png
+        │   └── morphology_stats.json
+        └── metadata.json
+run_summary.json          ← top-level summary for the whole run
+sorghum_pipeline.log      ← full log file
+```
+
+`run_summary.json` contains total plant count, success/failure counts, elapsed time, and the resolved config paths — useful for experiment tracking.
 
 ---
 
