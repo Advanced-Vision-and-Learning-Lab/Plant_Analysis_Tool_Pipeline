@@ -19,9 +19,10 @@ An end-to-end plant phenotyping library: load multi-band TIFFs or standard RGB i
 11. [Module 5 — Models (`models/`)](#module-5--models)
 12. [Module 6 — Output (`output/`)](#module-6--output)
 13. [Module 7 — Pipeline (`pipeline.py`)](#module-7--pipeline)
-14. [Tools (`tools/`)](#tools)
-15. [Output Structure](#output-structure)
-16. [Dependencies](#dependencies)
+14. [Module 8 — Downstream Analysis (`analysis/`)](#module-8--downstream-analysis)
+15. [Tools (`tools/`)](#tools)
+16. [Output Structure](#output-structure)
+17. [Dependencies](#dependencies)
 
 ---
 
@@ -147,6 +148,15 @@ Plant_Analysis_Tool_Pipeline/
 │   └── dbc_lacunarity.py     # DBC_Lacunarity — PyTorch lacunarity module
 ├── output/
 │   └── manager.py            # OutputManager — per-plant folder + JSON/PNG writer
+├── analysis/                 # Downstream temporal & statistical analysis (Sec. 2.6-2.7, 3.8)
+│   ├── collect.py            # collect_feature_matrix — flatten pipeline output → tidy CSV
+│   ├── feature_matrix.py     # temporal aggregation, distribution descriptors, VI reduction
+│   ├── statistics.py         # t-tests, robust z-tests, BH-FDR, group-level LMM
+│   ├── multivariate.py       # PCA, LDA, hierarchical clustering
+│   ├── temporal.py           # trajectories, mean-difference-from-control
+│   ├── case_studies.py       # Case Study 1 (sorghum) / Case Study 2 (maize) drivers
+│   ├── run_analysis.py       # CLI: python -m analysis.run_analysis
+│   └── README.md             # module docs, input tables, examples
 ├── tools/
 │   ├── organize_recording_tiffs.py          # Sort raw TIFFs into date/plant tree
 │   ├── stack_tiffs_to_multipage.py          # Stack many TIFFs into one file
@@ -173,20 +183,23 @@ Plant_Analysis_Tool_Pipeline/
 git clone https://github.com/Advanced-Vision-and-Learning-Lab/Plant_Analysis_Tool_Pipeline.git
 cd Plant_Analysis_Tool_Pipeline
 
-# 2. Create and activate a virtual environment
+# 2. Create and activate a virtual environment (tested with Python 3.12)
 python3 -m venv .venv
 source .venv/bin/activate
 
-# 3. Install core dependencies
-pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-pip install transformers pillow numpy scipy scikit-image scikit-learn
-pip install opencv-python matplotlib pandas pyyaml tqdm
+# 3. Install all dependencies at the exact versions used in the study
+pip install -r requirements.txt
+```
 
-# 4. Optional — morphology skeleton support
-pip install plantcv
+`requirements.txt` pins every package (core feature extraction, deep-learning
+segmentation, and the downstream `statsmodels` temporal/statistical analysis)
+to the version used to produce the results and figures in the paper. For a
+CUDA-matched PyTorch build, install `torch` / `torchvision` from the
+appropriate index first, e.g.:
 
-# 5. Optional — YOLO detection
-pip install ultralytics
+```bash
+pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu118
+pip install -r requirements.txt
 ```
 
 A Hugging Face token is required to download the BRIA RMBG segmentation model. Set it as an environment variable:
@@ -730,6 +743,40 @@ Writes `plant_pipeline.log` next to the output folder.
 
 ---
 
+## Module 8 — Downstream Analysis
+
+**Directory:** `analysis/`
+
+Implements the analysis stage described in Sections 2.6, 2.7, and 3.8 of the
+paper: once `PlantPipeline.run()` (above) has written per-plant, per-date
+feature JSON files, `analysis/` aggregates them into temporal feature
+matrices and reproduces the paper's statistical and multivariate analyses
+(control-mean t-tests, robust median/MAD z-tests with Benjamini–Hochberg FDR,
+group-level linear mixed-effects models, PCA/LDA/hierarchical clustering, and
+temporal mean-difference-from-control summaries), including drivers for both
+paper case studies (mutagenized sorghum treatments; maize cold-stress
+recovery).
+
+```python
+from analysis import collect_feature_matrix, run_sorghum_treatment_analysis
+
+features = collect_feature_matrix("output/sorghum_run")
+design = pd.read_csv("sorghum_design.csv")  # plant_id -> group (G1..G7, NT)
+results = run_sorghum_treatment_analysis(features, design, output_dir="analysis_out")
+```
+
+Or from the command line:
+
+```bash
+python -m analysis.run_analysis --output-folder output/sorghum_run \
+    --case-study sorghum --design sorghum_design.csv --results-dir analysis_out
+```
+
+See [`analysis/README.md`](analysis/README.md) for the full module reference,
+expected input tables, and both case-study examples.
+
+---
+
 ## Tools
 
 **Directory:** `tools/`
@@ -884,23 +931,27 @@ output_folder/
 
 ## Dependencies
 
-| Package | Purpose |
-|---------|---------|
-| `torch` + `torchvision` | BRIA and SAM3 model inference; DBC lacunarity |
-| `transformers` | HuggingFace `AutoModelForImageSegmentation` (BRIA RMBG) and `Sam3Model` / `Sam3Processor` (SAM3) |
-| `opencv-python` | Image I/O, contour analysis, morphological ops |
-| `Pillow` | TIFF loading |
-| `numpy` | Array operations |
-| `scipy` | Skeleton analysis, signal processing |
-| `scikit-image` | LBP, HOG, GLCM texture features |
-| `scikit-learn` | PCA |
-| `matplotlib` | Plots and heatmaps |
-| `pandas` | Tabular aggregation |
-| `pyyaml` | Config file parsing |
-| `tqdm` | Progress bars |
-| `plantcv` | (optional) PlantCV skeleton and morphology |
-| `ultralytics` | (optional) YOLO detection / pose |
-| `tifffile` | (tools) Multi-page TIFF stacking |
+All versions below are pinned in [`requirements.txt`](requirements.txt) and are
+the exact versions used for the paper's results and figures (Python 3.12).
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `torch` + `torchvision` | 2.5.1 / 0.20.1 (cu118) | BRIA and SAM3 model inference; DBC lacunarity |
+| `transformers` | 5.3.0 | HuggingFace `AutoModelForImageSegmentation` (BRIA RMBG) and `Sam3Model` / `Sam3Processor` (SAM3) |
+| `opencv-python` | 4.11.0.86 | Image I/O, contour analysis, morphological ops |
+| `Pillow` | 12.1.0 | TIFF loading |
+| `numpy` | 2.3.3 | Array operations |
+| `scipy` | 1.15.2 | Skeleton analysis, signal processing, t-tests / robust z-tests |
+| `scikit-image` | 0.26.0 | LBP, HOG, GLCM texture features |
+| `scikit-learn` | 1.6.1 | PCA, LDA, hierarchical clustering |
+| `statsmodels` | 0.14.2 | Linear mixed-effects models and Benjamini–Hochberg FDR for the downstream temporal/statistical analysis |
+| `matplotlib` | 3.11.0 | Plots and heatmaps |
+| `pandas` | 2.3.3 | Tabular aggregation, temporal feature matrices |
+| `pyyaml` | 6.0.1 | Config file parsing |
+| `tqdm` | 4.67.1 | Progress bars |
+| `plantcv` | 4.6 | (optional) PlantCV skeleton and morphology |
+| `ultralytics` | 8.4.6 | (optional) YOLO detection / pose |
+| `tifffile` | 2023.4.12 | (tools) Multi-page TIFF stacking |
 
 ---
 

@@ -1,0 +1,44 @@
+# Plant Analysis Tool Pipeline — Python dependencies
+#
+# Versions below are the exact package versions used for the analyses and
+# figures reported in:
+#   Orvati Nia et al., "A Data-Driven Image Extraction and Analysis Pipeline
+#   for Plant Phenotyping in Controlled Environments."
+#
+# Tested with Python 3.12.
+#
+#   pip install -r requirements.txt
+#
+# Note on PyTorch: the study used CUDA 11.8 builds
+# (torch 2.5.1+cu118 / torchvision 0.20.1+cu118). Install the matching CUDA
+# build for your system, e.g.:
+#   pip install torch==2.5.1 torchvision==0.20.1 --index-url https://download.pytorch.org/whl/cu118
+
+# --- Core: image loading, preprocessing, feature extraction ---
+numpy==2.3.3
+scipy==1.15.2
+pandas==2.3.3
+opencv-python==4.11.0.86
+pillow==12.1.0
+scikit-image==0.26.0
+scikit-learn==1.6.1
+matplotlib==3.11.0
+PyYAML==6.0.1
+tqdm==4.67.1
+
+# --- Deep-learning segmentation (BRIA RMBG-2.0 / SAM v3) and DBC lacunarity ---
+torch==2.5.1
+torchvision==0.20.1
+transformers==5.3.0
+
+# --- Downstream temporal & statistical analysis (LMM, t-tests, robust z-tests) ---
+statsmodels==0.14.2
+
+# --- Optional: PlantCV skeleton / morphology traits ---
+plantcv==4.6
+
+# --- Optional: YOLO plant detection and pose / keypoint tooling ---
+ultralytics==8.4.6
+
+# --- Optional: multi-page TIFF tooling (tools/) ---
+tifffile==2023.4.12
