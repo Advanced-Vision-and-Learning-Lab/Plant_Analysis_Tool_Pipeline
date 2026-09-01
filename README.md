@@ -378,6 +378,9 @@ model:
 
 ## Module 1 — Data
 
+<details>
+<summary>Click to expand</summary>
+
 **Directory:** `data/`
 
 ### `loader.py` — DataLoader
@@ -455,9 +458,15 @@ Utility class for mask operations used throughout the pipeline.
 | `validate_mask(mask, min_area)` | Check mask is non-trivial |
 | `create_overlay(image, mask, color)` | Colored mask overlay on RGB image |
 
+
+</details>
+
 ---
 
 ## Module 2 — Segmentation
+
+<details>
+<summary>Click to expand</summary>
 
 **File:** `segmentation/manager.py` — `SegmentationManager`
 
@@ -520,9 +529,15 @@ Enable SAM3 by setting `segmentation_model: "sam3"` in config, and provide a `te
 | Multispectral composites | Either; SAM3 preferred for complex scenes |
 | Need language-guided selection | SAM3 |
 
+
+</details>
+
 ---
 
 ## Module 3 — Detection
+
+<details>
+<summary>Click to expand</summary>
 
 **File:** `detection/yolo_detector.py` — `YOLODetector`
 
@@ -544,9 +559,15 @@ Optional YOLO-based detection step run **before** segmentation. Provides a tight
 
 Enable YOLO by setting `yolo_weights` in config.
 
+
+</details>
+
 ---
 
 ## Module 4 — Features
+
+<details>
+<summary>Click to expand</summary>
 
 **Directory:** `features/`
 
@@ -645,9 +666,15 @@ Band-level statistics and dimensionality reduction.
 
 **Main method:** `extract_spectral_features(spectral_stack, mask)`.
 
+
+</details>
+
 ---
 
 ## Module 5 — Models
+
+<details>
+<summary>Click to expand</summary>
 
 **File:** `models/dbc_lacunarity.py` — `DBC_Lacunarity`
 
@@ -664,9 +691,15 @@ lacunarity_map = model(image_tensor)  # [B, C, H, W] input
 | `compute_lacunarity(x, box_size)` | Single-scale lacunarity |
 | `get_model_info()` | Return config dict |
 
+
+</details>
+
 ---
 
 ## Module 6 — Output
+
+<details>
+<summary>Click to expand</summary>
 
 **File:** `output/manager.py` — `OutputManager`
 
@@ -693,9 +726,15 @@ Writes all per-plant results to a structured folder tree.
 | `morphology/morphology_stats.json` | All shape traits |
 | `metadata.json` | Plant key, date, frame, file path, timing |
 
+
+</details>
+
 ---
 
 ## Module 7 — Pipeline
+
+<details>
+<summary>Click to expand</summary>
 
 **File:** `pipeline.py` — `PlantPipeline`
 
@@ -741,9 +780,15 @@ run()
 
 Writes `plant_pipeline.log` next to the output folder.
 
+
+</details>
+
 ---
 
 ## Module 8 — Downstream Analysis
+
+<details>
+<summary>Click to expand</summary>
 
 **Directory:** `analysis/`
 
@@ -775,9 +820,15 @@ python -m analysis.run_analysis --output-folder output/sorghum_run \
 See [`analysis/README.md`](analysis/README.md) for the full module reference,
 expected input tables, and both case-study examples.
 
+
+</details>
+
 ---
 
 ## Tools
+
+<details>
+<summary>Click to expand</summary>
 
 **Directory:** `tools/`
 
@@ -889,6 +940,9 @@ python tools/rgb_input_pose/predict_plant_keypoints.py \
 ```
 
 Saves one JSON per image with predicted keypoints and confidence scores.
+
+
+</details>
 
 ---
 
