@@ -108,6 +108,9 @@ Multispectral TIF  (4-quadrant: Green / Red / Red-Edge / NIR)
 
 ## Repository Structure
 
+<details>
+<summary>Click to expand</summary>
+
 ```
 Plant_Analysis_Tool_Pipeline/
 ├── main.py                   # CLI entry point — run with `python main.py --config config.yaml`
@@ -174,9 +177,15 @@ Plant_Analysis_Tool_Pipeline/
                                  # (large file — not tracked by git, see .gitignore)
 ```
 
+
+</details>
+
 ---
 
 ## Installation
+
+<details>
+<summary>Click to expand</summary>
 
 ```bash
 # 1. Clone the repository
@@ -208,9 +217,15 @@ A Hugging Face token is required to download the BRIA RMBG segmentation model. S
 export HUGGINGFACE_TOKEN="hf_your_token_here"
 ```
 
+
+</details>
+
 ---
 
 ## Quick Start
+
+<details>
+<summary>Click to expand</summary>
 
 ```python
 from pipeline import PlantPipeline
@@ -230,9 +245,15 @@ results = run_pipeline(
 )
 ```
 
+
+</details>
+
 ---
 
 ## Running End-to-End with `python main.py`
+
+<details>
+<summary>Click to expand</summary>
 
 `main.py` is the recommended way to run the full pipeline from the command line. It loads your config, runs every stage, prints a summary, and saves a `run_summary.json` next to the results.
 
@@ -330,9 +351,15 @@ sorghum_pipeline.log      ← full log file
 
 `run_summary.json` contains total plant count, success/failure counts, elapsed time, and the resolved config paths — useful for experiment tracking.
 
+
+</details>
+
 ---
 
 ## Configuration
+
+<details>
+<summary>Click to expand</summary>
 
 Copy the example config and fill in your paths:
 
@@ -373,6 +400,9 @@ model:
 | `ProcessingParams` | `device`, `max_plants`, `max_frames` |
 | `OutputSettings` | `save_segmentation`, `save_texture`, `save_vegetation`, `save_morphology` |
 | `ModelSettings` | `segmentation_model` (`"briaai/RMBG-2.0"` or `"sam3"`), `text_prompt`, `yolo_model` |
+
+
+</details>
 
 ---
 
